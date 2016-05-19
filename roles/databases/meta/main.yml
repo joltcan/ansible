@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  author: "Fredrik Lundhag"
+  description: Common role for proxys
+  company: Mekk
+  license: MIT
+  version: 0.1
+  min_ansible_version: 1.4
+  platforms:
+    - name: Debian
+      versions:
+       - wheezy
+  categories:
+    - networking
+    - packaging
+    - system
+dependencies: []
