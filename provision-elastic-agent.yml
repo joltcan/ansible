@@ -1,7 +1,9 @@
 ---
 # Author: Fredrik Lundhag <f@mekk.com>
 # License: MIT
-# set global/group_vars for url/token/version
+# URL: https://github.com/joltcan/ansible/blob/master/provision-elastic-agent.yml
+#
+# set host/group_vars for url/token/version:
 # elastic_agent_version: 7.15.0
 # elastic_fleet_url: https://somehost:8820
 # elastic_fleet_enrollment_token: <agent policy token>
