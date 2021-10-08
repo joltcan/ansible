@@ -1,0 +1,70 @@
+---
+# Author: Fredrik Lundhag <f@mekk.com>
+# License: MIT
+# set global/group_vars for url/token/version
+# elastic_agent_version: 7.15.0
+# elastic_fleet_url: https://somehost:8820
+# elastic_fleet_enrollment_token: <agent policy token>
+#
+# I'm selecting my hosts from netbox, change the "hosts"-reference as you wish 
+- hosts: tags_elastic_agent
+  become: true
+
+  tasks:
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+    - name:
+        "apt : remove filebeat"
+      apt:
+        name: filebeat
+        state: absent
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+    - name:
+        "command : version"
+      command: elastic-agent version
+      register: elastic_cmd_version
+      failed_when: false
+      changed_when: false
+
+    # end play if version is set and correct
+    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html
+    - block:
+        # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/debug_module.html
+        - debug:
+            msg: "Nothing to upgrade, ending play for host"
+        # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/meta_module.html
+        - meta: end_host
+      when: elastic_agent_version in elastic_cmd_version.stdout
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
+    - name:
+        "stop : elastic-agent"
+      service:
+        name: elastic-agent
+        state: stopped
+      register: command_result
+      when: elastic_cmd_version.stdout == ""
+      failed_when: false
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/unarchive_module.html
+    - name:
+        "unarchive : elastic-agent"
+      unarchive:
+        src: https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-{{ elastic_agent_version }}-linux-x86_64.tar.gz
+        dest: /opt
+        remote_src: yes
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+    - name:
+        "command : register"
+      command: ./elastic-agent install -f --url={{ elastic_fleet_url }} --enrollment-token={{ elastic_fleet_enrollment_token }}
+      register: elastic_agent_install
+      args:
+        chdir: /opt/elastic-agent-{{ elastic_agent_version }}-linux-x86_64
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+    - name:
+        "file : remove archive"
+      file:
+        path: /opt/elastic-agent-{{ elastic_agent_version }}-linux-x86_64
+        state: absent
